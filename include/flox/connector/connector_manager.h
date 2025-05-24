@@ -1,0 +1,43 @@
+/*
+ * Flox Engine
+ * Developed by Evgenii Makarov (https://github.com/eeiaao)
+ *
+ * Copyright (c) 2025 Evgenii Makarov
+ * Licensed under the MIT License. See LICENSE file in the project root for full
+ * license information.
+ */
+
+#pragma once
+
+#include "flox/connector/exchange_connector.h"
+
+#include <iostream>
+#include <map>
+#include <memory>
+#include <vector>
+
+namespace flox {
+
+class ConnectorManager {
+public:
+  void registerConnector(std::shared_ptr<ExchangeConnector> connector) {
+    const auto &id = connector->exchangeId();
+    connectors[id] = connector;
+  }
+
+  void startAll(std::function<void(const BookUpdate &)> onBookUpdate,
+                std::function<void(const Trade &)> onTrade) {
+    for (auto &[symbol, connector] : connectors) {
+      std::cout << "[ConnectorManager] starting: " << symbol << std::endl;
+      connector->setCallbacks(
+          [onBookUpdate](const BookUpdate &update) { onBookUpdate(update); },
+          [onTrade](const Trade &trade) { onTrade(trade); });
+      connector->start();
+    }
+  }
+
+private:
+  std::map<std::string, std::shared_ptr<ExchangeConnector>> connectors;
+};
+
+} // namespace flox

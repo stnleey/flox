@@ -1,0 +1,87 @@
+/*
+ * Flox Engine
+ * Developed by Evgenii Makarov (https://github.com/eeiaao)
+ *
+ * Copyright (c) 2025 Evgenii Makarov
+ * Licensed under the MIT License. See LICENSE file in the project root for full
+ * license information.
+ */
+
+#include "flox/book/book_update.h"
+#include "flox/book/book_update_factory.h"
+#include "flox/book/trade.h"
+#include "flox/connector/connector_manager.h"
+#include "flox/connector/exchange_connector.h"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <memory>
+#include <string>
+
+using namespace flox;
+using ::testing::_;
+using ::testing::DoAll;
+using ::testing::Invoke;
+using ::testing::Return;
+using ::testing::SaveArg;
+
+class MockExchangeConnector : public ExchangeConnector {
+public:
+  MOCK_METHOD(void, start, (), (override));
+  MOCK_METHOD(void, stop, (), (override));
+  MOCK_METHOD(std::string, exchangeId, (), (const, override));
+  MOCK_METHOD(void, setCallbacks, (BookUpdateCallback, TradeCallback),
+              (override));
+
+  BookUpdateCallback _bookCb;
+  TradeCallback _tradeCb;
+
+  void triggerTestData() {
+    if (_bookCb && _tradeCb) {
+      BookUpdateFactory factory;
+      auto bu = factory.create();
+      bu.symbol = 42;
+
+      Trade tr;
+      tr.symbol = 42;
+      tr.price = 3.14;
+
+      _bookCb(bu);
+      _tradeCb(tr);
+    }
+  }
+};
+
+TEST(ConnectorManagerTest, RegisterAndStartAll) {
+  auto connector = std::make_shared<MockExchangeConnector>();
+  ConnectorManager manager;
+
+  EXPECT_CALL(*connector, exchangeId()).WillOnce(Return("bybit"));
+
+  EXPECT_CALL(*connector, setCallbacks(_, _))
+      .WillOnce(DoAll(SaveArg<0>(&connector->_bookCb),
+                      SaveArg<1>(&connector->_tradeCb)));
+
+  EXPECT_CALL(*connector, start()).WillOnce(Invoke([&] {
+    connector->triggerTestData();
+  }));
+
+  manager.registerConnector(connector);
+
+  bool bookUpdateCalled = false;
+  bool tradeCalled = false;
+
+  manager.startAll(
+      [&](const BookUpdate &bu) {
+        EXPECT_EQ(bu.symbol, 42);
+        bookUpdateCalled = true;
+      },
+      [&](const Trade &tr) {
+        EXPECT_EQ(tr.symbol, 42);
+        EXPECT_DOUBLE_EQ(tr.price, 3.14);
+        tradeCalled = true;
+      });
+
+  EXPECT_TRUE(bookUpdateCalled);
+  EXPECT_TRUE(tradeCalled);
+}

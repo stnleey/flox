@@ -1,0 +1,65 @@
+site_name: FLOX
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      accent: light blue
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue grey
+      accent: light blue
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Usage:
+      - Getting Started: usage/getting_started.md
+      - Running Engine: usage/running_engine.md
+      - Config: usage/config.md
+      - Strategies: usage/strategies.md
+  - Abstract Layer:
+      - Core Interfaces:
+          - Subsystem: components/subsystem.md
+          - Strategy: components/abstract_strategy.md
+          - EngineBuilder: components/abstract_engine_builder.md
+          - OrderExecutor: components/abstract_executor.md
+          - OrderExecutionListener: components/abstract_execution_listener.md
+          - ExecutionTracker: components/abstract_execution_tracker.md
+          - PnLTracker: components/abstract_pnl_tracker.md
+          - PositionManager: components/abstract_position_manager.md
+          - RiskManager: components/abstract_risk_manager.md
+          - OrderValidator: components/abstract_order_validator.md
+      - Market Data Interfaces:
+          - OrderBook: components/abstract_order_book.md
+          - ExchangeConnector: components/exchange_connector.md
+  - Implementation Layer:
+      - Market Infrastructure:
+          - FullOrderBook: components/full_order_book.md
+          - WindowedOrderBook: components/windowed_order_book.md
+          - BookSide: components/book_side.md
+          - BookUpdate: components/book_update.md
+          - Candle: components/candle.md
+          - Trade: components/trade.md
+          - CandleAggregator: components/candle_aggregator.md
+          - MarketDataBus: components/market_data_bus.md
+      - Execution and Routing:
+          - ExecutionTrackerAdapter: components/execution_tracker_adapter.md
+          - MultiExecutionListener: components/multi_execution_listener.md
+          - OrderRouter: components/order_router.md
+          - Order: components/order.md
+          - KillSwitch: components/abstract_killswitch.md
+          - PositionManager: components/position_manager.md
+          - StrategyManager: components/strategy_manager.md
+      - Configuration and State:
+          - SymbolRegistry: components/symbol_registry.md
+          - EngineConfig: components/engine_config.md
+          - StorageSink: components/storage_sink.md
+          - ArenaResource: components/arena_resource.md
+          - Common Types: components/common.md
+      - Connectors:
+          - ConnectorManager: components/connector_manager.md
+          - ConnectorFactory: components/connector_factory.md
+  - Benchmarks: order_book_benchmarks.md
+  - Future: future.md
