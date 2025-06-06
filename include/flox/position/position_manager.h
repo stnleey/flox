@@ -27,24 +27,21 @@ class PositionManager : public IPositionManager, public IOrderExecutionListener,
   void start() override {}
   void stop() override {}
 
+  void onOrderAccepted(const Order&) override {}
+  void onOrderPartiallyFilled(const Order&, Quantity) override {}
   void onOrderFilled(const Order& order) override;
-  void onOrderRejected(const Order& order, const std::string& reason) override;
+  void onOrderCanceled(const Order&) override {}
+  void onOrderExpired(const Order&) override {}
+  void onOrderRejected(const Order& order) override;
+  void onOrderReplaced(const Order&, const Order&) override {}
 
-  double getPosition(SymbolId symbol) const override;
+  Quantity getPosition(SymbolId symbol) const override;
   void printPositions() const;
 
  private:
-  static constexpr int64_t QTY_PRECISION = 1'000'000;
   static constexpr size_t MAX_SYMBOLS = 65'536;
 
-  std::vector<int64_t> _positions = std::vector<int64_t>(MAX_SYMBOLS, 0);
-
-  static int64_t toInternal(double qty)
-  {
-    return static_cast<int64_t>(qty * QTY_PRECISION + 0.5);
-  }
-
-  static double toDisplay(int64_t qty) { return static_cast<double>(qty) / QTY_PRECISION; }
+  std::vector<Quantity> _positions = std::vector<Quantity>(MAX_SYMBOLS, Quantity{0});
 };
 
 }  // namespace flox
