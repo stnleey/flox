@@ -7,9 +7,9 @@
  * license information.
  */
 
+#include "flox/book/events/book_update_event.h"
 #include "flox/book/full_order_book.h"
 #include "flox/common.h"
-#include "flox/engine/events/book_update_event.h"
 #include "flox/engine/market_data_event_pool.h"
 
 #include <gtest/gtest.h>
@@ -26,21 +26,25 @@ class FullOrderBookTest : public ::testing::Test
   EventHandle<BookUpdateEvent> makeSnapshot(const std::vector<BookLevel>& bids,
                                             const std::vector<BookLevel>& asks)
   {
-    auto u = pool.acquire();
-    u->type = BookUpdateType::SNAPSHOT;
-    u->bids.assign(bids.begin(), bids.end());
-    u->asks.assign(asks.begin(), asks.end());
-    return u;
+    auto opt = pool.acquire();
+    assert(opt);
+    auto& u = *opt;
+    u->update.type = BookUpdateType::SNAPSHOT;
+    u->update.bids.assign(bids.begin(), bids.end());
+    u->update.asks.assign(asks.begin(), asks.end());
+    return std::move(u);
   }
 
   EventHandle<BookUpdateEvent> makeDelta(const std::vector<BookLevel>& bids,
                                          const std::vector<BookLevel>& asks)
   {
-    auto u = pool.acquire();
-    u->type = BookUpdateType::DELTA;
-    u->bids.assign(bids.begin(), bids.end());
-    u->asks.assign(asks.begin(), asks.end());
-    return u;
+    auto opt = pool.acquire();
+    assert(opt);
+    auto& u = *opt;
+    u->update.type = BookUpdateType::DELTA;
+    u->update.bids.assign(bids.begin(), bids.end());
+    u->update.asks.assign(asks.begin(), asks.end());
+    return std::move(u);
   }
 };
 

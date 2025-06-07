@@ -10,10 +10,10 @@
 #pragma once
 
 #include "flox/book/candle.h"
+#include "flox/book/events/book_update_event.h"
+#include "flox/book/events/trade_event.h"
 #include "flox/engine/abstract_market_data_subscriber.h"
-#include "flox/engine/events/book_update_event.h"
 #include "flox/engine/events/market_data_event.h"
-#include "flox/engine/events/trade_event.h"
 #include "flox/execution/abstract_executor.h"
 #include "flox/position/abstract_position_manager.h"
 #include "flox/risk/abstract_risk_manager.h"
@@ -33,24 +33,8 @@ class IStrategy : public IMarketDataSubscriber
 
   // Event hooks
   virtual void onCandle(SymbolId symbol, const Candle& candle) {}
-  virtual void onTrade(TradeEvent* trade) {}
-  virtual void onBookUpdate(BookUpdateEvent* bookUpdate) {}
-
-  // MarketData dispatch
-  void onMarketData(const IMarketDataEvent& event) override
-  {
-    switch (event.eventType())
-    {
-      case MarketDataEventType::TRADE:
-        onTrade(static_cast<TradeEvent*>(const_cast<IMarketDataEvent*>(&event)));
-        break;
-      case MarketDataEventType::BOOK:
-        onBookUpdate(static_cast<BookUpdateEvent*>(const_cast<IMarketDataEvent*>(&event)));
-        break;
-      default:
-        break;
-    }
-  }
+  virtual void onTrade(const TradeEvent& trade) override {}
+  virtual void onBookUpdate(const BookUpdateEvent& bookUpdate) override {}
 
   SubscriberId id() const override { return _subscriberId; }
   SubscriberMode mode() const override { return SubscriberMode::PUSH; }

@@ -8,9 +8,8 @@
  */
 
 #include "flox/aggregator/candle_aggregator.h"
+#include "flox/book/events/trade_event.h"
 #include "flox/common.h"
-#include "flox/engine/events/trade_event.h"
-#include "flox/engine/market_data_event_pool.h"
 
 #include <benchmark/benchmark.h>
 #include <random>
@@ -31,19 +30,19 @@ static void BM_CandleAggregator_OnTrade(benchmark::State& state)
   std::uniform_real_distribution<> qtyDist(1.0, 5.0);
 
   int64_t baseTs = 0;
-  EventPool<TradeEvent, 127> tradePool;
 
   for (auto _ : state)
   {
-    auto trade = tradePool.acquire();
+    TradeEvent event;
 
-    trade->symbol = SYMBOL;
-    trade->price = Price::fromDouble(priceDist(rng));
-    trade->quantity = Quantity::fromDouble(qtyDist(rng));
-    trade->isBuy = true;
-    trade->timestamp = std::chrono::system_clock::time_point(std::chrono::seconds(baseTs++));
+    event.trade.symbol = SYMBOL;
+    event.trade.price = Price::fromDouble(priceDist(rng));
+    event.trade.quantity = Quantity::fromDouble(qtyDist(rng));
+    event.trade.isBuy = true;
+    event.trade.timestamp =
+        std::chrono::system_clock::time_point(std::chrono::seconds(baseTs++));
 
-    aggregator.onMarketData(*trade);
+    aggregator.onTrade(event);
   }
 
   aggregator.stop();

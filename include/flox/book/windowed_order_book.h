@@ -11,8 +11,8 @@
 
 #include "flox/book/abstract_order_book.h"
 #include "flox/book/book_side.h"
+#include "flox/book/events/book_update_event.h"
 #include "flox/common.h"
-#include "flox/engine/events/book_update_event.h"
 
 #include <algorithm>
 #include <cmath>
@@ -42,9 +42,11 @@ class WindowedOrderBook : public IOrderBook
   {
   }
 
-  void applyBookUpdate(const BookUpdateEvent& update) override
+  void applyBookUpdate(const BookUpdateEvent& event) override
   {
     std::scoped_lock lock(_mutex);
+
+    const auto& update = event.update;
 
     Price minPrice = Price(std::numeric_limits<int64_t>::max());
     Price maxPrice = Price(std::numeric_limits<int64_t>::lowest());

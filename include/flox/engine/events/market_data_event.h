@@ -11,20 +11,13 @@
 
 #include "flox/engine/abstract_event_pool.h"
 #include "flox/engine/market_data_event_pool.h"
-#include "flox/util/ref_countable.h"
+#include "flox/util/base/ref_countable.h"
 
 namespace flox
 {
 
 struct TickBarrier;
 class IMarketDataSubscriber;
-
-enum class MarketDataEventType
-{
-  BOOK,
-  TRADE,
-  CANDLE
-};
 
 struct IMarketDataEvent : public RefCountable
 {
@@ -33,11 +26,11 @@ struct IMarketDataEvent : public RefCountable
 
  public:
   virtual ~IMarketDataEvent() = default;
-  virtual MarketDataEventType eventType() const noexcept = 0;
 
-  virtual void dispatchTo(IMarketDataSubscriber& sub) const = 0;
-
-  void setPool(IEventPool* pool) { _origin = pool; }
+  void setPool(IEventPool* pool)
+  {
+    _origin = pool;
+  }
 
   virtual void releaseToPool()
   {
@@ -46,8 +39,6 @@ struct IMarketDataEvent : public RefCountable
       _origin->release(this);
     }
   }
-
-  virtual EventHandle<IMarketDataEvent> wrap() { return EventHandle<IMarketDataEvent>{this}; }
 
   virtual void clear() {}
 };

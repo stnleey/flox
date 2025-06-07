@@ -10,8 +10,8 @@
 #pragma once
 
 #include "flox/book/abstract_order_book.h"
+#include "flox/book/events/book_update_event.h"
 #include "flox/common.h"
-#include "flox/engine/events/book_update_event.h"
 
 #include <cmath>
 #include <mutex>
@@ -33,9 +33,11 @@ class FullOrderBook : public IOrderBook
   {
   }
 
-  void applyBookUpdate(const BookUpdateEvent& update) override
+  void applyBookUpdate(const BookUpdateEvent& event) override
   {
     std::scoped_lock lock(_mutex);
+
+    const auto& update = event.update;
 
     if (update.type == BookUpdateType::SNAPSHOT)
     {

@@ -7,11 +7,11 @@
  * license information.
  */
 
+#include "flox/book/events/book_update_event.h"
+#include "flox/book/events/trade_event.h"
 #include "flox/common.h"
 #include "flox/connector/connector_manager.h"
 #include "flox/connector/exchange_connector.h"
-#include "flox/engine/events/book_update_event.h"
-#include "flox/engine/events/trade_event.h"
 #include "flox/engine/market_data_event_pool.h"
 
 #include <gmock/gmock.h>
@@ -46,17 +46,19 @@ class MockExchangeConnector : public ExchangeConnector
     if (_bookCb && _tradeCb)
     {
       EventPool<BookUpdateEvent, 3> bookUpdatePool;
-      EventPool<TradeEvent, 3> tradePool;
 
-      auto bu = bookUpdatePool.acquire();
-      bu->symbol = 42;
+      auto buOpt = bookUpdatePool.acquire();
+      assert(buOpt);
 
-      auto tr = tradePool.acquire();
-      tr->symbol = 42;
-      tr->price = Price::fromDouble(3.14);
+      auto& bu = *buOpt;
+      bu->update.symbol = 42;
 
-      _bookCb(bu.get());
-      _tradeCb(tr.get());
+      TradeEvent tradeEvent;
+      tradeEvent.trade.symbol = 42;
+      tradeEvent.trade.price = Price::fromDouble(3.14);
+
+      _bookCb(*bu);
+      _tradeCb(tradeEvent);
     }
   }
 };
@@ -79,16 +81,15 @@ TEST(ConnectorManagerTest, RegisterAndStartAll)
   bool tradeCalled = false;
 
   manager.startAll(
-      [&](BookUpdateEvent* bu)
+      [&](const BookUpdateEvent& event)
       {
-        ASSERT_NE(bu, nullptr);
-        EXPECT_EQ(bu->symbol, 42);
+        EXPECT_EQ(event.update.symbol, 42);
         bookUpdateCalled = true;
       },
-      [&](TradeEvent* tr)
+      [&](const TradeEvent& event)
       {
-        EXPECT_EQ(tr->symbol, 42);
-        EXPECT_EQ(tr->price, Price::fromDouble(3.14));
+        EXPECT_EQ(event.trade.symbol, 42);
+        EXPECT_EQ(event.trade.price, Price::fromDouble(3.14));
         tradeCalled = true;
       });
 

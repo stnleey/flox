@@ -7,11 +7,11 @@
  * license information.
  */
 
+#include "flox/book/events/book_update_event.h"
+#include "flox/book/events/trade_event.h"
 #include "flox/common.h"
 #include "flox/engine/abstract_engine_builder.h"
-#include "flox/engine/events/book_update_event.h"
-#include "flox/engine/events/trade_event.h"
-#include "flox/engine/market_data_bus.h"
+#include "flox/engine/bus/market_data_bus.h"
 #include "flox/engine/market_data_event_pool.h"
 #include "flox/strategy/abstract_strategy.h"
 
@@ -30,21 +30,21 @@ class TestStrategy : public IStrategy
  public:
   explicit TestStrategy(SymbolId symbol) : _symbol(symbol) {}
 
-  void onTrade(TradeEvent* trade) override
+  void onTrade(const TradeEvent& event) override
   {
-    if (trade->symbol == _symbol)
+    if (event.trade.symbol == _symbol)
     {
       ++_seenTrades;
-      _lastTradePrice = trade->price;
+      _lastTradePrice = event.trade.price;
     }
   }
 
-  void onBookUpdate(BookUpdateEvent* update) override
+  void onBookUpdate(const BookUpdateEvent& event) override
   {
-    if (update->symbol == _symbol && !update->bids.empty())
+    if (event.update.symbol == _symbol && !event.update.bids.empty())
     {
       ++_seenBooks;
-      _lastBid = update->bids[0].price;
+      _lastBid = event.update.bids[0].price;
     }
   }
 
@@ -61,41 +61,43 @@ class TestStrategy : public IStrategy
   Price _lastBid = Price::fromDouble(0.0);
 };
 
-using TradePool = EventPool<TradeEvent, 7>;
 using BookUpdatePool = EventPool<BookUpdateEvent, 7>;
 
 class MockConnector
 {
  public:
-  MockConnector(MarketDataBus& bus, TradePool& tradePool, BookUpdatePool& bookPool,
+  MockConnector(MarketDataBus& bus, BookUpdatePool& bookPool,
                 SymbolId symbol)
-      : _bus(bus), _tradePool(tradePool), _bookPool(bookPool), _symbol(symbol)
+      : _bus(bus), _bookPool(bookPool), _symbol(symbol)
   {
   }
 
   void publishTrade(Price price, Quantity qty)
   {
-    auto event = _tradePool.acquire();
-    event->symbol = _symbol;
-    event->price = price;
-    event->quantity = qty;
-    event->isBuy = true;
-    event->timestamp = std::chrono::system_clock::now();
-    _bus.publish(std::move(event));
+    TradeEvent event;
+
+    event.trade.symbol = _symbol;
+    event.trade.price = price;
+    event.trade.quantity = qty;
+    event.trade.isBuy = true;
+    event.trade.timestamp = std::chrono::system_clock::now();
+
+    _bus.publish(event);
   }
 
   void publishBook(Price bidPrice, Quantity bidQty)
   {
-    auto event = _bookPool.acquire();
-    event->symbol = _symbol;
-    event->type = BookUpdateType::SNAPSHOT;
-    event->bids.push_back({bidPrice, bidQty});
+    auto eventOpt = _bookPool.acquire();
+    assert(eventOpt);
+    auto& event = *eventOpt;
+    event->update.symbol = _symbol;
+    event->update.type = BookUpdateType::SNAPSHOT;
+    event->update.bids.push_back({bidPrice, bidQty});
     _bus.publish(std::move(event));
   }
 
  private:
   MarketDataBus& _bus;
-  TradePool& _tradePool;
   BookUpdatePool& _bookPool;
   SymbolId _symbol;
 };
@@ -111,9 +113,8 @@ class SmokeEngineBuilder : public IEngineBuilder
   std::unique_ptr<IEngine> build() override
   {
     _bus = std::make_unique<MarketDataBus>();
-    _tradePool = std::make_unique<TradePool>();
     _bookPool = std::make_unique<BookUpdatePool>();
-    _connector = std::make_unique<MockConnector>(*_bus, *_tradePool, *_bookPool, _symbol);
+    _connector = std::make_unique<MockConnector>(*_bus, *_bookPool, _symbol);
 
     _bus->subscribe(_strategy);
     return std::make_unique<EngineImpl>(*_bus, *_connector, _strategy);
@@ -145,7 +146,6 @@ class SmokeEngineBuilder : public IEngineBuilder
   SymbolId _symbol;
   std::shared_ptr<TestStrategy> _strategy;
   std::unique_ptr<MarketDataBus> _bus;
-  std::unique_ptr<TradePool> _tradePool;
   std::unique_ptr<BookUpdatePool> _bookPool;
   std::unique_ptr<MockConnector> _connector;
 };
