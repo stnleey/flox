@@ -10,6 +10,8 @@
 #include "flox/position/position_manager.h"
 #include "flox/common.h"
 
+#include <iostream>
+
 namespace flox
 {
 
@@ -26,6 +28,16 @@ void PositionManager::onOrderFilled(const Order& order)
   {
     _positions[order.symbol] -= order.quantity;
   }
+}
+
+void PositionManager::onOrderPartiallyFilled(const Order& order, Quantity qty)
+{
+  if (order.symbol >= _positions.size())
+    return;
+
+  Order partial = order;
+  partial.quantity = qty;
+  onOrderFilled(partial);
 }
 
 void PositionManager::onOrderRejected(const Order&)

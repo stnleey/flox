@@ -14,8 +14,6 @@
 #include "flox/execution/abstract_execution_listener.h"
 #include "flox/position/abstract_position_manager.h"
 
-#include <cstdint>
-#include <iostream>
 #include <vector>
 
 namespace flox
@@ -28,7 +26,7 @@ class PositionManager : public IPositionManager, public IOrderExecutionListener,
   void stop() override {}
 
   void onOrderAccepted(const Order&) override {}
-  void onOrderPartiallyFilled(const Order&, Quantity) override {}
+  void onOrderPartiallyFilled(const Order& order, Quantity qty) override;
   void onOrderFilled(const Order& order) override;
   void onOrderCanceled(const Order&) override {}
   void onOrderExpired(const Order&) override {}
