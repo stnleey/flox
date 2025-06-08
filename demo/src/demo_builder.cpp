@@ -16,7 +16,7 @@ std::unique_ptr<IEngine> DemoBuilder::build()
 
   auto execTracker = std::make_unique<ConsoleExecutionTracker>();
   auto pnlTracker = std::make_unique<SimplePnLTracker>();
-  auto posMgr = std::make_unique<SimplePositionManager>();
+  auto posMgr = std::make_unique<SimplePositionManager>(100);
   auto storage = std::make_unique<StdoutStorageSink>();
   auto killSwitch = std::make_unique<SimpleKillSwitch>();
   auto riskMgr = std::make_unique<SimpleRiskManager>(killSwitch.get());
@@ -58,14 +58,16 @@ std::unique_ptr<IEngine> DemoBuilder::build()
   for (auto& strat : strategies)
     strategySubs.push_back(std::make_unique<StrategySubsystem>(strat));
 
-  auto candleAgg = std::make_unique<CandleAggregator>(
-      std::chrono::seconds{60},
-      [](SymbolId, const Candle& c)
-      { std::cout << "[candle] close=" << c.close.toDouble() << '\n'; });
+  auto candleBus =
+      std::make_unique<Subsystem<CandleBus>>(std::make_unique<CandleBus>());
+  auto candleAgg =
+      std::make_unique<CandleAggregator>(std::chrono::seconds{60},
+                                         candleBus->get());
 
   for (auto& strat : strategies)
   {
     mdb->get()->subscribe(strat);
+    candleBus->get()->subscribe(strat);
   }
 
   mdb->get()->subscribe(std::shared_ptr<IMarketDataSubscriber>(candleAgg.get(), [](auto*) {}));
@@ -86,6 +88,7 @@ std::unique_ptr<IEngine> DemoBuilder::build()
   subsystems.push_back(std::move(riskMgr));
   subsystems.push_back(std::move(posMgr));
   subsystems.push_back(std::move(storage));
+  subsystems.push_back(std::move(candleBus));
   subsystems.push_back(std::move(candleAgg));
 
   subsystems.push_back(std::make_unique<Subsystem<WindowedOrderBookFactory>>(std::move(obFactory)));
