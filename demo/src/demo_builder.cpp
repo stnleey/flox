@@ -42,6 +42,28 @@ std::unique_ptr<Engine> DemoBuilder::build()
   auto candleAggregator = std::make_shared<CandleAggregator>(std::chrono::seconds{60}, candleBus.get());
   tradeBus->subscribe(candleAggregator);
 
+#if FLOX_CPU_AFFINITY_ENABLED
+  // Configure CPU affinity for optimal performance
+  using namespace performance;
+
+  // Set up optimal performance configuration with isolated cores
+  performance::CriticalComponentConfig config;
+  config.preferIsolatedCores = true;
+  config.exclusiveIsolatedCores = true;
+
+  auto cpuAffinity = createCpuAffinity();
+  auto assignment = cpuAffinity->getNumaAwareCoreAssignment(config);
+
+  std::cout << "[DemoBuilder] ✓ CPU affinity configured for high-performance workload:" << std::endl;
+  std::cout << "  - Market Data cores: " << assignment.marketDataCores.size() << std::endl;
+  std::cout << "  - Execution cores: " << assignment.executionCores.size() << std::endl;
+  std::cout << "  - Strategy cores: " << assignment.strategyCores.size() << std::endl;
+  std::cout << "  - Risk cores: " << assignment.riskCores.size() << std::endl;
+  std::cout << "  - Using isolated cores: " << (assignment.hasIsolatedCores ? "Yes" : "No") << std::endl;
+#else
+  std::cout << "[DemoBuilder] ✓ CPU affinity disabled (ENABLE_CPU_AFFINITY=OFF)" << std::endl;
+#endif
+
   std::vector<std::shared_ptr<IStrategy>> strategies;
   std::vector<std::unique_ptr<ISubsystem>> subsystems;
 
