@@ -16,7 +16,7 @@
 namespace flox
 {
 
-#ifdef USE_SYNC_MARKET_BUS
+#ifdef USE_SYNC_TRADE_BUS
 using TradeBus = EventBus<TradeEvent, SyncPolicy<TradeEvent>>;
 #else
 using TradeBus = EventBus<TradeEvent, AsyncPolicy<TradeEvent>>;
@@ -31,8 +31,12 @@ inline std::unique_ptr<TradeBus> createOptimalTradeBus(bool enablePerformanceOpt
 {
   auto bus = std::make_unique<TradeBus>();
 #if FLOX_CPU_AFFINITY_ENABLED
-  [[maybe_unused]] bool success = bus->setupOptimalConfiguration(TradeBus::ComponentType::MARKET_DATA,
-                                                                 enablePerformanceOptimizations);
+  bool success = bus->setupOptimalConfiguration(TradeBus::ComponentType::MARKET_DATA,
+                                                enablePerformanceOptimizations);
+  if (!success)
+  {
+    FLOX_LOG_WARN("TradeBus affinity setup failed, continuing with default configuration");
+  }
 #endif
   return bus;
 }
