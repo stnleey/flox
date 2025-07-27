@@ -8,6 +8,9 @@ It provides low-level infrastructure for constructing execution pipelines, proce
 
 📖 Documentation is available at [https://flox-foundation.github.io/flox](https://flox-foundation.github.io/flox)
 
+## Connectors
+
+The **open-source community implementations of connectors built on top of Flox** are maintained in the following repository: [https://github.com/FLOX-Foundation/flox-connectors](https://github.com/FLOX-Foundation/flox-connectors)
 
 ## Contribution
 
