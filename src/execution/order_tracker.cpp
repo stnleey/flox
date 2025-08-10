@@ -113,7 +113,7 @@ void OrderTracker::onReplaced(OrderId oldId, const Order& newOrder, std::string_
   newSlot->state.localOrder = newOrder;
   newSlot->state.exchangeOrderId = std::string(newExchangeId);
   newSlot->state.clientOrderId = std::string(newClientOrderId);
-  newSlot->state.status.store(OrderEventStatus::REPLACED, std::memory_order_release);
+  newSlot->state.status.store(OrderEventStatus::SUBMITTED, std::memory_order_release);
   newSlot->state.createdAt = now();
   newSlot->state.lastUpdate.store(newSlot->state.createdAt, std::memory_order_release);
 }
